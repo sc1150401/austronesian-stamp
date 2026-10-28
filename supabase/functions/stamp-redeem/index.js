@@ -65,7 +65,7 @@ Deno.serve(async req => {
       }
       return await res.json();
     }
-    const users = await db("stamp_participants?select=id&line_user_id=eq."+
+    const users = await db("stamp_participants?select=id,participant_no&line_user_id=eq."+
       encodeURIComponent(identity.sub));
     if (!users[0]) return reply({error:"PARTICIPANT_NOT_FOUND"},409);
     const participant = users[0].id;
@@ -81,14 +81,16 @@ Deno.serve(async req => {
         })
       });
     }
-    const [stamps, redemptions, vendors] = await Promise.all([
+    const [stamps, redemptions, vendors, stations] = await Promise.all([
       db("stamp_records?select=station_id&participant_id=eq."+participant),
       db("stamp_redemptions?select=id,vendor_id,redemption_no,redeemed_at&participant_id=eq."+
         participant+"&order=redemption_no"),
-      db("stamp_vendors?select=id,name,active&order=id")
+      db("stamp_vendors?select=id,name,active&order=id"),
+      db("stamp_stations?select=id,name&order=id")
     ]);
     return reply({
-      ok:true,stamps,redemptions,vendors,redeemed_id:redeemedId,
+      ok:true,stamps,redemptions,vendors,stations,
+      participant_number:String(users[0].participant_no),redeemed_id:redeemedId,
       available:Math.max(0,Math.min(2,Math.floor(stamps.length/3))-redemptions.length)
     });
   } catch (error) {
@@ -98,3 +100,4 @@ Deno.serve(async req => {
     return reply({error:"TEMPORARY_FAILURE"},500);
   }
 });
+
