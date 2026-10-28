@@ -1,0 +1,1 @@
+{"name":"austronesian-stamp-admin-tests","private":true,"scripts":{"test":"node tests/database.mjs && node tests/auth.cjs && node tests/ui.cjs"},"devDependencies":{"@electric-sql/pglite":"0.5.12","jsdom":"30.1.3"}}
