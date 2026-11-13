@@ -45,4 +45,21 @@ const charm=await create('charm and sticker',6);await repeat(charm,4,0);await re
 assert.equal((await rpc('overview')).redemption_distribution[3].people,1);
 assert.equal((await rpc('participant',{number:String(t.participant_no)})).spent_stamps,6);
 console.log('PASS repeat rewards: three stickers, two socks, charm plus sticker, retry, stale balance, historical costs');
+
+const bulkMigration=fs.readFileSync('supabase/migrations/202611130007_reset_stamps.sql','utf8');
+await db.exec(bulkMigration);await db.exec(bulkMigration);
+const before=await rpc('overview');
+const bulk={mode:'all_stamps_only',reason:'清空測試',request_id:crypto.randomUUID()};
+const result=await rpc('reset',bulk);assert(result.removed>0);
+assert.equal((await rpc('overview')).started,0);
+assert.equal((await rpc('overview')).redeemed_total,before.redeemed_total);
+const card=await rpc('participant',{number:String(stickers.participant_no)});
+assert.equal(card.spent_stamps,0);assert.equal(card.stamps.length,0);
+assert.equal(card.redemptions.filter(r=>r.archived).length,3);
+await db.query('insert into stamp_records(participant_id,station_id) values($1,1),($1,2)',[stickers.id]);
+await rpc('reset',bulk);assert.equal((await rpc('overview')).started,1);
+await assert.rejects(()=>repeat(stickers,1,0,key),/已更新/);
+await repeat(stickers,1,0);
+assert.equal((await rpc('overview')).redemption_distribution[4].people,1);
+console.log('PASS bulk reset preserves accounts, historical receipts, statistics and new scans on retry');
 await db.close();
