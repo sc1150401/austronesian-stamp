@@ -2,7 +2,7 @@ const fs=require('fs'),assert=require('assert'),{JSDOM}=require('jsdom'),vm=requ
 (async()=>{
 const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{url:'https://sc1150401.github.io/austronesian-stamp/',runScripts:'outside-only'}),w=dom.window;
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false};
-w.eval(w.document.querySelectorAll('script')[1].textContent.replace(/initLine\(\);\s*$/,'')+';window.api={renderAccount,openReward,rewardRequest};');
+w.eval(w.document.querySelectorAll('script')[1].textContent.replace(/openCard\(\);\s*$/,'')+';window.api={renderAccount,openReward,rewardRequest};');
 const base={ok:true,rules_version:'gifts-v2',gift_ready:true,stamps:Array.from({length:6},(_,i)=>({station_id:i+1})),gifts:[{id:1,name:'南島小巨人紋身貼紙',stamp_cost:2,active:true},{id:2,name:'南島特色襪子',stamp_cost:3,active:true},{id:4,name:'南島小巨人吊飾',stamp_cost:4,active:true},{id:3,name:'南島特色絲巾禮盒',stamp_cost:6,active:true}],redemptions:[]};
 const buttons=()=>[...w.document.querySelectorAll('#rewards button')].map(b=>b.disabled);
 w.api.renderAccount({...base,stamps:base.stamps.slice(0,2)});assert.deepEqual(buttons(),[false,true,true,true]);
@@ -16,6 +16,15 @@ w.api.renderAccount({...base,redemptions:[{id:'b',gift_id:3,stamp_cost:6,redeeme
 w.api.renderAccount({...base,rules_version:'pending',gift_ready:false});assert.deepEqual(buttons(),[true,true,true,true]);
 w.AbortSignal=AbortSignal;w.liff={getIDToken:()=> 'test'};let paths=[];w.fetch=async(url)=>{paths.push(url);if(url.endsWith('stamp-gifts'))throw Error('not deployed');return{ok:true,json:async()=>({...base,redemptions:[],vendors:[]})}};
 const pending=await w.api.rewardRequest('status');assert.equal(pending.gift_ready,false);assert.equal(pending.redemptions.length,0);paths=[];await assert.rejects(()=>w.api.rewardRequest('redeem',{gift_id:1}));assert.equal(paths.length,1);assert(paths[0].endsWith('stamp-gifts'));
+// Refresh with a pending QR must reflect an admin reset without issuing a new claim.
+w.localStorage.setItem('island-pending-station',JSON.stringify({station:2,at:Date.now()}));
+w.history.replaceState(null,'','?station=2');
+w.liff={init:async()=>{},isLoggedIn:()=>true,getFriendship:async()=>({friendFlag:true}),getIDToken:()=> 'test'};
+w.HTMLElement.prototype.scrollIntoView=function(){};
+paths=[];w.fetch=async url=>{paths.push(url);return {ok:true,status:200,json:async()=>({...base,stamps:[],redemptions:[]})}};
+w.document.getElementById('refresh-stamps').click();await new Promise(resolve=>setTimeout(resolve,25));
+assert(paths.some(url=>url.endsWith('stamp-gifts')));assert(!paths.some(url=>url.endsWith('stamp-claim')));
+assert.equal(w.document.getElementById('count').textContent,'0 / 6 個印記');
 let handler,dbCalls=0;const src=fs.readFileSync('supabase/functions/stamp-gifts/index.js','utf8');const context={Deno:{serve:fn=>handler=fn,env:{get:()=> 'test'}},Response,Request,URLSearchParams,AbortSignal,Date,fetch:async url=>{if(String(url).includes('api.line.me'))return new Response('{}',{status:401});dbCalls++;throw Error('unexpected DB access')}};vm.runInNewContext(src,context);
 const res=await handler(new Request('https://example.test',{method:'POST',body:JSON.stringify({action:'redeem',gift_id:1,id_token:'invalid'})}));assert.equal(res.status,401);assert.equal(dbCalls,0);
 console.log('PASS gifts UI: thresholds; spent stamp overlays; repeatable gifts; warning; disabled deployment; no legacy redemption fallback; rejected identity never reaches DB');
