@@ -115,10 +115,10 @@ begin
   if p_action='reset' and p_payload->>'mode'='all_stamps_only' then
     lock table public.stamp_participants,public.stamp_records,public.stamp_gift_redemptions in share row exclusive mode;
     -- Preserve receipts and release their old charges before opening the new stamp cards.
-    with moved as (delete from public.stamp_gift_redemptions returning *)
+    with moved as (delete from public.stamp_gift_redemptions where participant_id is not null returning *)
       insert into public.stamp_gift_archive(id,participant_id,gift_id,stamp_cost,redemption_no,redeemed_at,redeemed_by,request_id)
       select id,participant_id,gift_id,stamp_cost,redemption_no,redeemed_at,redeemed_by,request_id from moved;
-    delete from public.stamp_records;
+    delete from public.stamp_records where participant_id is not null;
     get diagnostics v_number=row_count;
     v_target='全部集章卡';
     v_before=jsonb_build_object('stamps',v_number);
@@ -127,10 +127,10 @@ begin
     lock table public.stamp_participants,public.stamp_records,public.stamp_gift_redemptions,public.stamp_gift_archive in share row exclusive mode;
     select jsonb_build_object('redemptions',(select count(*) from public.stamp_gift_history),
       'stamps',(select count(*) from public.stamp_records)) into v_before;
-    delete from public.stamp_gift_redemptions;
-    delete from public.stamp_gift_archive;
+    delete from public.stamp_gift_redemptions where participant_id is not null;
+    delete from public.stamp_gift_archive where participant_id is not null;
     if p_payload->>'mode'='all_stamps_rewards' then
-      delete from public.stamp_records;
+      delete from public.stamp_records where participant_id is not null;
       v_target='全部集章與兌換';
       v_after=jsonb_build_object('stamps',0,'redemptions',0);
     else
