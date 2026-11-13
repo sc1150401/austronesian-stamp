@@ -6,7 +6,7 @@ const code=n=>'A'+String(n).padStart(6,'0');
 const date=s=>s?new Date(s).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'';
 const message=s=>{$('message').textContent=s;};
 const errors={LOGIN_FAILED:'Email 或密碼不正確。',LOGIN_REQUIRED:'登入已到期，請重新登入。',ADMIN_REQUIRED:'此帳號未獲管理權限。',SERVER_NOT_READY:'後台尚未完成部署設定。',NOT_FOUND:'找不到這個參加者編號。',RECORD_CHANGED:'資料已有變動，請重新查詢後再操作。',REQUEST_CONFLICT:'操作編號衝突，請重新查詢。',REASON_REQUIRED:'請填寫至少兩個字的操作原因。',TEMPORARY_FAILURE:'連線暫時失敗。若剛才正在修改資料，請先重新查詢確認結果。'};
-function clearSession(){$('copy-editor').hidden=true;$('copy-fields').replaceChildren();copyVersion=null;$('copy-status').textContent='';token='';stats=null;person=null;audits=[];people=[];cursor='0';$('dashboard').hidden=true;$('login-card').hidden=false;$('logout').hidden=true;$('password').value='';if($('reset-dialog').open)$('reset-dialog').close();}
+function clearSession(){bulkRequest=null;$('copy-editor').hidden=true;$('copy-fields').replaceChildren();copyVersion=null;$('copy-status').textContent='';token='';stats=null;person=null;audits=[];people=[];cursor='0';$('dashboard').hidden=true;$('login-card').hidden=false;$('logout').hidden=true;$('password').value='';if($('reset-dialog').open)$('reset-dialog').close();}
 async function request(action,payload={}){
  const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(action==='login'?{action,...payload}:{action,payload}),signal:AbortSignal.timeout(30000)});
  let body;try{body=await response.json();}catch{throw Error('伺服器沒有回傳有效資料，請確認 stamp-admin 已部署。');}
@@ -114,13 +114,44 @@ $('check-counts').addEventListener('click',()=>task(async()=>{
   catch(error){output.textContent=error.message;}
 }));
 let bulkRequest=null;
+async function clearCombinedCards(job,output){
+  if(!job.cards){
+    const cards=[];
+    let after='0';
+    for(;;){
+      const page=await request('participants',{after,limit:100});
+      for(const row of page.rows){
+        if(row.stamps || row.redeemed)cards.push({number:row.number,id:crypto.randomUUID()});
+      }
+      if(page.rows.length<100)break;
+      after=page.rows.at(-1).number;
+    }
+    job.cards=cards;
+    job.done=0;
+  }
+  while(job.done<job.cards.length){
+    const card=job.cards[job.done];
+    output.textContent='正在清除 '+code(card.number)+'（'+(job.done+1)+'／'+job.cards.length+'）';
+    if(!card.revision)card.revision=(await request('participant',{number:card.number})).revision;
+    try{
+      await request('reset',{number:card.number,revision:card.revision,mode:'all',request_id:card.id,reason:'全部參加者：清除集章與兌換紀錄'});
+    }catch(error){
+      if(error.message===errors.RECORD_CHANGED)card.revision=null;
+      throw Error('已完成 '+job.done+'／'+job.cards.length+' 位，停在 '+code(card.number)+'。'+error.message);
+    }
+    job.done++;
+  }
+}
 $('clear-stamps').addEventListener('click',()=>task(async()=>{
   const select=$('bulk-mode'),mode=select.value,label=select.selectedOptions[0].textContent;
   if(!window.confirm('操作對象：全部參加者。確定要「'+label+'」？'))return;
   if(!bulkRequest || bulkRequest.mode!==mode)bulkRequest={mode,id:crypto.randomUUID()};
   const output=$('bulk-result');
   output.textContent='正在送出清除請求…';
-  try{await request('reset',{mode,reason:'全部參加者：'+label,request_id:bulkRequest.id});}
+  try{
+    if(mode==='all_stamps_rewards')await clearCombinedCards(bulkRequest,output);
+    else await request('reset',{mode,reason:'全部參加者：'+label,request_id:bulkRequest.id});
+  }
   catch(error){output.textContent='尚未確認清除結果。'+error.message;return;}
   bulkRequest=null;
   person=null;renderPerson();
