@@ -54,14 +54,26 @@ function filterCopy(){
   }
 }
 $('copy-search').addEventListener('input',filterCopy);
+async function loadCopyResource(url,label){
+  let response;
+  try {response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)});}
+  catch {throw Error(label+'連線失敗。請檢查網路；若可開啟服務網址，請檢查跨來源連線設定。');}
+  if(url===copyEndpoint){
+    if(response.status===404)throw Error('找不到 stamp-content（404）。請在 Supabase 的 Edge Functions 部署這個函式。');
+    if(response.status===401)throw Error('文字服務要求驗證（401）。請檢查 stamp-content 的 Verify JWT with legacy secret 設定。');
+  }
+  const body=await response.json().catch(()=>null);
+  if(!response.ok)throw Error(label+'（HTTP '+response.status+'）'+(typeof body?.error==='string'?'：'+body.error:'。'));
+  if(!body)throw Error(label+'回傳格式異常，請重新整理。');
+  return body;
+}
 $('load-copy').addEventListener('click',()=>task(async()=>{
   const status=$('copy-status');
   status.textContent='載入中…';
   try {
-    const [manifest,result]=await Promise.all([fetch('site-copy.json',{cache:'no-store'}),fetch(copyEndpoint,{cache:'no-store'})]);
-    if(!manifest.ok||!result.ok)throw Error();
-    const fields=await manifest.json(),current=await result.json();
-    if(!Number.isInteger(current.version)||!current.texts)throw Error();
+    const [fields,current]=await Promise.all([loadCopyResource('site-copy.json','網站文字清單'),loadCopyResource(copyEndpoint,'Supabase 文字服務')]);
+    if(!Array.isArray(fields))throw Error('網站文字清單格式異常。');
+    if(!Number.isInteger(current.version)||!current.texts||typeof current.texts!=='object')throw Error('stamp-content 未回傳有效的文字版本。');
     const fragment=document.createDocumentFragment();
     for(const {text,group} of fields){
       const row=document.createElement('div'),label=document.createElement('label'),input=document.createElement('textarea');
@@ -72,7 +84,7 @@ $('load-copy').addEventListener('click',()=>task(async()=>{
     }
     $('copy-fields').replaceChildren(fragment);copyVersion=current.version;
     $('copy-editor').hidden=false;filterCopy();status.textContent='已載入 '+fields.length+' 項文字。';
-  }catch{status.textContent='載入失敗，請確認 Supabase 文字服務已啟用後再試。';}
+  }catch(error){status.textContent=error.message||'載入文字失敗。';}
 }));
 $('save-copy').addEventListener('click',()=>task(async()=>{
   if(copyVersion===null)return;
