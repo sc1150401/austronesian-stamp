@@ -103,13 +103,29 @@ $('save-copy').addEventListener('click',()=>task(async()=>{
   copyVersion=result.version;$('copy-status').textContent='文字已發布，參加者重新開啟頁面即可看到。';
 }));
 
+function currentCounts(){
+  const stamps=stats.stamp_distribution.reduce((sum,row)=>sum+row.stamps*row.people,0);
+  return '目前資料庫共有 '+stamps+' 枚章、'+stats.redeemed_total+' 份兌換、'+stats.total+' 個參加者帳戶。';
+}
+$('check-counts').addEventListener('click',()=>task(async()=>{
+  const output=$('bulk-result');
+  output.textContent='正在查詢…';
+  try{await refreshStats();output.textContent=currentCounts();}
+  catch(error){output.textContent=error.message;}
+}));
 let bulkRequest=null;
 $('clear-stamps').addEventListener('click',()=>task(async()=>{
   const select=$('bulk-mode'),mode=select.value,label=select.selectedOptions[0].textContent;
   if(!window.confirm('操作對象：全部參加者。確定要「'+label+'」？'))return;
   if(!bulkRequest || bulkRequest.mode!==mode)bulkRequest={mode,id:crypto.randomUUID()};
-  await request('reset',{mode,reason:'全部參加者：'+label,request_id:bulkRequest.id});
+  const output=$('bulk-result');
+  output.textContent='正在送出清除請求…';
+  try{await request('reset',{mode,reason:'全部參加者：'+label,request_id:bulkRequest.id});}
+  catch(error){output.textContent='尚未確認清除結果。'+error.message;return;}
   bulkRequest=null;
-  $('bulk-result').textContent='已完成：'+label+'。';
-  person=null;renderPerson();await refreshStats();await loadPeople(true);await loadAudit();
+  person=null;renderPerson();
+  output.textContent='已收到清除回覆，正在查詢剩餘筆數…';
+  try{await refreshStats();output.textContent=currentCounts();}
+  catch(error){output.textContent='已收到清除回覆，但未能查到剩餘筆數。'+error.message;return;}
+  await loadPeople(true);await loadAudit();
 }));
