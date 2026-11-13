@@ -76,4 +76,15 @@ assert.deepEqual(await getCard(stickers),neighborBefore);
 await db.query('insert into stamp_records(participant_id,station_id) values($1,1),($1,2)',[target.id]);
 await rpc('reset',one);await repeat(target,1,0);
 console.log('PASS single stamp reset preserves receipts, other participants, and new scans on retry');
+
+const oneRewards={mode:'redemptions',number:String(target.participant_no),reason:'清除兌換',revision:(await getCard(target)).revision,request_id:crypto.randomUUID()};
+await rpc('reset',oneRewards);
+assert.equal((await getCard(target)).redemptions.length,0);assert.equal((await getCard(target)).stamps.length,2);
+const beforeRewards=await rpc('overview');
+await rpc('reset',{mode:'all_rewards_only',reason:'清除全部兌換',request_id:crypto.randomUUID()});
+const emptyRewards=await rpc('overview');assert.equal(emptyRewards.redeemed_total,0);assert.deepEqual(emptyRewards.stamp_distribution,beforeRewards.stamp_distribution);
+await repeat(target,1,0);
+await rpc('reset',{mode:'all_stamps_rewards',reason:'清除兩種紀錄',request_id:crypto.randomUUID()});
+const empty=await rpc('overview');assert.equal(empty.redeemed_total,0);assert.equal(empty.started,0);assert.equal(empty.total,beforeRewards.total);
+console.log('PASS individual and bulk redemption clearing, balance restoration, combined clearing');
 await db.close();

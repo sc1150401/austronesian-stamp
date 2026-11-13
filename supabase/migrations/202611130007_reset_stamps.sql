@@ -123,6 +123,20 @@ begin
     v_target='全部集章卡';
     v_before=jsonb_build_object('stamps',v_number);
     v_after=jsonb_build_object('stamps',0);
+  elsif p_action='reset' and p_payload->>'mode' in ('all_rewards_only','all_stamps_rewards') then
+    lock table public.stamp_participants,public.stamp_records,public.stamp_gift_redemptions,public.stamp_gift_archive in share row exclusive mode;
+    select jsonb_build_object('redemptions',(select count(*) from public.stamp_gift_history),
+      'stamps',(select count(*) from public.stamp_records)) into v_before;
+    delete from public.stamp_gift_redemptions;
+    delete from public.stamp_gift_archive;
+    if p_payload->>'mode'='all_stamps_rewards' then
+      delete from public.stamp_records;
+      v_target='全部集章與兌換';
+      v_after=jsonb_build_object('stamps',0,'redemptions',0);
+    else
+      v_target='全部兌換';
+      v_after=jsonb_build_object('stamps',v_before->'stamps','redemptions',0);
+    end if;
   elsif p_action='reset' then
     v_number=(p_payload->>'number')::bigint;
     v_kind=p_payload->>'mode';

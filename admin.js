@@ -93,10 +93,11 @@ $('save-copy').addEventListener('click',()=>task(async()=>{
 
 let bulkRequest=null;
 $('clear-stamps').addEventListener('click',()=>task(async()=>{
-  if(!window.confirm('確定清空所有人的集章紀錄？所有集章卡都會歸零，帳戶及歷次兌換紀錄會保留。'))return;
-  bulkRequest??=crypto.randomUUID();
-  const result=await request('reset',{mode:'all_stamps_only',reason:'管理員清空全部集章卡',request_id:bulkRequest});
+  const select=$('bulk-mode'),mode=select.value,label=select.selectedOptions[0].textContent;
+  if(!window.confirm('操作對象：全部參加者。確定要「'+label+'」？'))return;
+  if(!bulkRequest || bulkRequest.mode!==mode)bulkRequest={mode,id:crypto.randomUUID()};
+  await request('reset',{mode,reason:'全部參加者：'+label,request_id:bulkRequest.id});
   bulkRequest=null;
-  $('bulk-result').textContent='已清空 '+result.removed+' 枚印記。';
+  $('bulk-result').textContent='已完成：'+label+'。';
   person=null;renderPerson();await refreshStats();await loadPeople(true);await loadAudit();
 }));
