@@ -271,7 +271,7 @@ document.getElementById('redeem-confirm').addEventListener('click',async()=>{
   }
 });
 
-async function initLine() {
+async function initLine(allowClaim=true) {
   if (busy) return;
   busy = true;
   await copyReady;
@@ -290,7 +290,7 @@ async function initLine() {
   try {
     if (!window.liff) throw new Error('SDK_UNAVAILABLE');
     await liff.init({liffId: LIFF_ID});
-    captureStation();
+    if(allowClaim)captureStation();
     if (!liff.isLoggedIn()) {
       status.textContent = pageText("請登入 LINE，讀取你的集章卡。");
       button.textContent = pageText("使用 LINE 登入");
@@ -320,7 +320,7 @@ async function initLine() {
     }
     try { localStorage.removeItem(FRIEND_REDIRECT_KEY); } catch {}
     document.documentElement.dataset.entry = 'ready';
-    if (pendingStation) {
+    if (allowClaim && pendingStation) {
       status.textContent = pageText("正在確認並儲存印記…");
       try { await claimStation(); }
       catch (error) {
@@ -358,7 +358,7 @@ async function initLine() {
     renderAccount(rewards);
     status.textContent = pageText("✓ LINE 身分驗證成功，集章紀錄已從資料庫載入。");
     document.getElementById('scan-button').disabled = false;
-    document.getElementById('scan-status').textContent = claimFailure || claimMessage;
+    document.getElementById('scan-status').textContent = claimFailure || (allowClaim ? claimMessage : '');
     button.textContent = pageText("重新整理集章紀錄");
     button.hidden = false;
     entry.hidden = !claimFailure;
@@ -377,7 +377,7 @@ async function initLine() {
     button.hidden = false;
   } finally { busy = false; entry.classList.remove('loading'); }
 }
-document.getElementById('refresh-stamps').addEventListener('click', () => initLine());
+document.getElementById('refresh-stamps').addEventListener('click', () => initLine(false));
 document.getElementById('line-login').addEventListener('click', () => {
   if (busy) return;
   try {
@@ -418,7 +418,9 @@ document.getElementById('scan-button').addEventListener('click', async () => {
   } finally { if (!busy) scan.disabled = awaitingFriend; }
 });
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && awaitingFriend && !busy) initLine();
+  if(document.hidden || busy || redeemDialog.open)return;
+  if(awaitingFriend)initLine();
+  else if(document.getElementById('account-entry').hidden)initLine(false);
 });
 document.getElementById('copy-participant-code').addEventListener('click',async()=>{
   const value=document.getElementById('participant-code').textContent;
@@ -427,5 +429,10 @@ document.getElementById('copy-participant-code').addEventListener('click',async(
   catch { document.getElementById('copy-status').textContent=pageText(" 請長按上方編號複製"); }
 });
 renderAccount(null);
-initLine();
+const viewOnlyEntry=new URL(location.href).searchParams.get('view')==='card' && !new URL(location.href).searchParams.has('station');
+function openCard(){
+  if(viewOnlyEntry)clearStation();
+  return initLine(!viewOnlyEntry);
+}
+openCard();
 </script></html>
