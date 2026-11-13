@@ -16,7 +16,11 @@ footer{padding:0;background:#fcf5ef}footer p{margin:0;padding:14px;font-size:12p
 
 /* Improve introduction contrast against the patterned background. */
 .hero{color:#102e59}.hero small{color:#102e59;font-weight:700}.hero h1{color:#102e59;font-weight:800}.hero p{color:#102e59;font-weight:700;line-height:1.85}
-</style><header><img src="assets/theme-2026/header.png" width="1823" height="292" alt="南島尋潮｜集章任務"></header><main><div class="demo">連線測試版｜登入後讀取帳號的雲端集章紀錄。掃碼集章設定中，僅開放指定測試站；贈品兌換僅供測試，不作為正式領獎憑證。</div><section id="account-entry" class="card" style="margin:0 0 25px"><h2>開始集章</h2><p id="line-status" role="status" aria-live="polite">正在連接 LINE…</p><button id="line-login" hidden>使用 LINE 登入</button><div id="friend-gate" hidden><p>請先加入雙創營銷顧問有限公司官方 LINE；若已封鎖，請解除封鎖。</p><a href="https://lin.ee/O6l2xhh" target="_blank" rel="noopener" style="display:inline-block;padding:12px 17px;background:#253f35;color:white;border-radius:10px;text-decoration:none">加入雙創官方 LINE</a><p class="note">加入後回到本頁，點「我已加入，繼續集章」。</p></div><p class="note">登入後由後端驗證 LINE 身分，建立參加者資料並讀取紀錄；先前的模擬章不會轉入。</p></section><section class="hero"><div><small>2026 屏東南島文化節</small><h1>探索南島，收集文化足跡。</h1><p>探索全場域六個集章點，收集屬於你的文化足跡。<br>2 章換南島紋身貼紙、4 章換南島特色襪子、6 章換南島絲巾禮盒。兌換會扣除可用章數，每種贈品每人限領一次。</p><span class="tag">12.05 — 12.06　屏東縣民公園</span></div><div class="art" aria-hidden="true">☀</div></section><section class="card" id="stamp-card"><div class="row"><h2>我的集章卡</h2><b id="count"></b></div><div class="progress"><div id="bar"></div></div><div class="stamps" id="stamps"></div><button class="primary" id="scan-button" disabled>掃描 QR 集章</button><button class="quiet" id="refresh-stamps" style="margin-top:12px">重新整理紀錄</button><div id="participant-identity" hidden><p>參加者編號：<strong id="participant-code"></strong></p><button class="quiet" id="copy-participant-code">複製編號</button><span id="copy-status" role="status"></span></div><p id="scan-status" role="status" aria-live="polite"></p><p class="note">集章點名稱暫定。正式版將由現場 QR Code 開啟對應集章點。</p></section><section class="card"><div class="row"><h2>集章好禮兌換</h2><span class="tag">兌換扣章・每種限領一次</span></div><p class="note">每次兌換將扣除對應的可用章數，已使用的章不可重複兌換。先換貼紙後，集滿其餘 4 章，最多可再換襪子，不能再換絲巾禮盒。想換絲巾禮盒，請保留全部 6 章。請在工作人員面前操作，確認後無法取消。</p><div class="rewards" id="rewards"></div><p id="receipt" role="status"></p></section><section class="card"><h2>集章小提醒</h2><p class="note">① 全場域設有 6 個集章點，每個點限集一次，最多累積 6 章。<br>② 貼紙扣 2 章、襪子扣 4 章、絲巾禮盒扣 6 章；每種贈品每人限兌換一次。<br>③ 集滿 6 章可換「貼紙＋襪子」（可分次兌換），或「絲巾禮盒」。也可只換貼紙或襪子。<br>④ 一旦兌換貼紙或襪子，就無法再換絲巾禮盒。兌換扣除可用章數，但保留各站集章紀錄。</p></section></main><dialog id="redeem-dialog" aria-labelledby="redeem-title"><h2 id="redeem-title">確認兌換</h2><p id="redeem-question"></p><p class="note">請在工作人員面前操作，確認後無法取消。</p><p id="redeem-result" role="status" aria-live="polite"></p><div class="row"><button class="quiet" id="redeem-cancel">取消</button><button id="redeem-confirm">確認兌換</button></div></dialog><footer><img src="assets/theme-2026/footer.png" width="1823" height="383" loading="lazy" alt="2026 屏東南島文化節；指導單位：原住民族委員會；主辦單位：屏東縣政府"><p>帳號連線測試版</p></footer><script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script><script>const contentEndpoint='https://sqzkdpmcsbdlzpcvnrxy.supabase.co/functions/v1/stamp-content';
+.stamp.spent{border-color:#dba878;background:#fff0e1;color:#6a5d55}
+.stamp-art{position:relative}
+.stamp.spent img{filter:grayscale(1) sepia(1) saturate(1.6);opacity:.46;mix-blend-mode:multiply}
+.stamp .redeemed-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;padding:4px 10px;border:1px solid #a9a29b;border-radius:5px;background:#fff8efed;color:#5e5955;font-size:clamp(13px,3.8vw,20px);font-weight:800;white-space:nowrap}
+</style><header><img src="assets/theme-2026/header.png" width="1823" height="292" alt="南島尋潮｜集章任務"></header><main><div class="demo">連線測試版｜登入後讀取帳號的雲端集章紀錄。掃碼集章設定中，僅開放指定測試站；贈品兌換僅供測試，不作為正式領獎憑證。</div><section id="account-entry" class="card" style="margin:0 0 25px"><h2>開始集章</h2><p id="line-status" role="status" aria-live="polite">正在連接 LINE…</p><button id="line-login" hidden>使用 LINE 登入</button><div id="friend-gate" hidden><p>請先加入雙創營銷顧問有限公司官方 LINE；若已封鎖，請解除封鎖。</p><a href="https://lin.ee/O6l2xhh" target="_blank" rel="noopener" style="display:inline-block;padding:12px 17px;background:#253f35;color:white;border-radius:10px;text-decoration:none">加入雙創官方 LINE</a><p class="note">加入後回到本頁，點「我已加入，繼續集章」。</p></div><p class="note">登入後由後端驗證 LINE 身分，建立參加者資料並讀取紀錄；先前的模擬章不會轉入。</p></section><section class="hero"><div><small>2026 屏東南島文化節</small><h1>探索南島，收集文化足跡。</h1><p>探索全場域六個集章點，收集屬於你的文化足跡。<br>2 章換南島小巨人紋身貼紙、3 章換南島特色襪子、4 章換南島小巨人吊飾、6 章換南島特色絲巾禮盒。兌換會扣除可用章數，同款贈品可重複兌換。</p><span class="tag">12.05 — 12.06　屏東縣民公園</span></div><div class="art" aria-hidden="true">☀</div></section><section class="card" id="stamp-card"><div class="row"><h2>我的集章卡</h2><b id="count"></b></div><div class="progress"><div id="bar"></div></div><div class="stamps" id="stamps"></div><button class="primary" id="scan-button" disabled>掃描 QR 集章</button><button class="quiet" id="refresh-stamps" style="margin-top:12px">重新整理紀錄</button><div id="participant-identity" hidden><p>參加者編號：<strong id="participant-code"></strong></p><button class="quiet" id="copy-participant-code">複製編號</button><span id="copy-status" role="status"></span></div><p id="scan-status" role="status" aria-live="polite"></p><p class="note">集章點名稱暫定。正式版將由現場 QR Code 開啟對應集章點。</p></section><section class="card"><div class="row"><h2>集章好禮兌換</h2><span class="tag">每次扣章・同款可重複換</span></div><p class="note">每次兌換將扣除對應的可用章數，已使用的章不可重複兌換。只要剩餘章數足夠，就能再換同款或其他贈品。想換絲巾禮盒，請保留全部 6 章。請在工作人員面前操作，確認後無法取消。</p><div class="rewards" id="rewards"></div><p id="receipt" role="status"></p></section><section class="card"><h2>集章小提醒</h2><p class="note">① 全場域設有 6 個集章點，每個點限集一次，最多累積 6 章。<br>② 貼紙扣 2 章、襪子扣 3 章、吊飾扣 4 章、絲巾禮盒扣 6 章；剩餘章數足夠即可再次兌換同款贈品。<br>③ 例如集滿 6 章，可換 3 份貼紙、2 雙襪子、貼紙加吊飾各 1 份，或 1 盒絲巾。<br>④ 一旦兌換貼紙、襪子或吊飾，就無法再換絲巾禮盒。兌換扣除可用章數，但保留各站集章紀錄。</p></section></main><dialog id="redeem-dialog" aria-labelledby="redeem-title"><h2 id="redeem-title">確認兌換</h2><p id="redeem-question"></p><p class="note">請在工作人員面前操作，確認後無法取消。</p><p id="redeem-result" role="status" aria-live="polite"></p><div class="row"><button class="quiet" id="redeem-cancel">取消</button><button id="redeem-confirm">確認兌換</button></div></dialog><footer><img src="assets/theme-2026/footer.png" width="1823" height="383" loading="lazy" alt="2026 屏東南島文化節；指導單位：原住民族委員會；主辦單位：屏東縣政府"><p>帳號連線測試版</p></footer><script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script><script>const contentEndpoint='https://sqzkdpmcsbdlzpcvnrxy.supabase.co/functions/v1/stamp-content';
 let publishedCopy=Object.create(null);
 function pageText(source,...values){
   return (publishedCopy[source]??source).replace(/\{(\d+)\}/g,(_,n)=>String(values[n]));
@@ -121,6 +125,9 @@ function renderAccount(data) {
   const stamps = loaded ? data.stamps.map(s => s.station_id) : [];
   document.getElementById('count').textContent = loaded ? pageText("{0} / 6 個印記", stamps.length) : pageText("尚未載入");
   document.getElementById('bar').style.width = (stamps.length / 6 * 100) + '%';
+  // The status endpoint returns stamps oldest first, with station ID breaking time ties.
+  const usedCount=data?.gift_ready ? data.redemptions.reduce((sum,r)=>sum+r.stamp_cost,0) : 0;
+  const used=new Set(stamps.slice(0,usedCount));
   document.getElementById('stamps').replaceChildren(...STAMP_ART.map((asset,i)=>{
     const card=document.createElement('div'), img=document.createElement('img');
     const title=document.createElement('b'), note=document.createElement('span');
@@ -128,7 +135,13 @@ function renderAccount(data) {
     img.src='assets/theme-2026/'+asset+'.png'; img.alt=stampLabels()[i]; img.width=568; img.height=568;
     title.textContent=pageText("集章點 0{0}", i+1);
     note.textContent=!loaded?pageText("等待載入"):stamps.includes(i+1)?pageText("✓ 已收集"):pageText("等待你的足跡");
-    card.append(img,title,note);return card;
+    if(used.has(i+1)){
+      card.classList.add('spent');
+      const art=document.createElement('div'), mark=document.createElement('strong');
+      art.className='stamp-art';mark.className='redeemed-mark';mark.textContent=pageText("已兌換");
+      art.append(img,mark);card.append(art,title);
+    } else {card.append(img,title,note);}
+    return card;
   }));
   if (loaded && Array.isArray(data.stations)) {
     document.querySelectorAll('#stamps .stamp b').forEach((el,i) => {
@@ -153,9 +166,10 @@ let rewardAccount = null;
 let selectedReward = null;
 const redeemDialog = document.getElementById('redeem-dialog');
 const GIFT_CATALOG = [
-  {id:1,get name(){return pageText("南島紋身貼紙")},stamp_cost:2},
-  {id:2,get name(){return pageText("南島特色襪子")},stamp_cost:4},
-  {id:3,get name(){return pageText("南島絲巾禮盒")},stamp_cost:6}
+  {id:1,get name(){return pageText("南島小巨人紋身貼紙")},stamp_cost:2},
+  {id:2,get name(){return pageText("南島特色襪子")},stamp_cost:3},
+  {id:4,get name(){return pageText("南島小巨人吊飾")},stamp_cost:4},
+  {id:3,get name(){return pageText("南島特色絲巾禮盒")},stamp_cost:6}
 ];
 async function rewardRequest(action, selection = {}) {
   async function post(endpoint, payload) {
@@ -169,38 +183,40 @@ async function rewardRequest(action, selection = {}) {
     return data;
   }
   let data;
-  try { data=await post('/stamp-gifts',{action,...selection}); }
+  try { data=await post('/stamp-gifts',{action,rules_version:'gifts-v2',...selection}); }
   catch(error) {
     if(action!=='status') throw error;
     // During deployment, preserve access to stamps without offering old tasting rewards.
     const legacy=await post('/stamp-redeem',{action:'status'});
     return {...legacy,redemptions:[],gifts:[],gift_ready:false,rules_version:'pending'};
   }
-  if(data.rules_version!=='gifts-v1' || !Array.isArray(data.gifts) || !Array.isArray(data.redemptions) ||
-     data.redemptions.length>2 || data.redemptions.some(r=>!GIFT_CATALOG.some(g=>g.id===r.gift_id && g.stamp_cost===r.stamp_cost)) ||
-     new Set(data.redemptions.map(r=>r.gift_id)).size!==data.redemptions.length ||
+  if(data.rules_version!=='gifts-v2' || !Array.isArray(data.gifts) ||
+     !GIFT_CATALOG.every(g=>data.gifts.some(row=>row.id===g.id && row.stamp_cost===g.stamp_cost)))
+    return {...data,gift_ready:false,rules_version:'pending'};
+  if(!Array.isArray(data.redemptions) ||
+     data.redemptions.length>3 || data.redemptions.some(r=>!GIFT_CATALOG.some(g=>g.id===r.gift_id && (g.stamp_cost===r.stamp_cost || (g.id===2 && r.stamp_cost===4)))) ||
+     new Set(data.redemptions.map(r=>r.id)).size!==data.redemptions.length ||
      data.redemptions.reduce((sum,r)=>sum+r.stamp_cost,0)>data.stamps.length)
     throw new Error(pageText("贈品紀錄格式異常，請重新整理。"));
   return data;
 }
 function renderRewards(data) {
-  rewardAccount=data?.rules_version==='gifts-v1' && data.gift_ready ? data : null;
+  rewardAccount=data?.rules_version==='gifts-v2' && data.gift_ready ? data : null;
   const list=document.getElementById('rewards');list.replaceChildren();
   const records=rewardAccount?data.redemptions:[];
   const spent=records.reduce((sum,r)=>sum+r.stamp_cost,0);
   const available=rewardAccount?Math.max(0,data.stamps.length-spent):0;
   for(const gift of GIFT_CATALOG) {
     const current=rewardAccount && data.gifts.find(g=>g.id===gift.id);
-    const taken=records.some(r=>r.gift_id===gift.id);
     const card=document.createElement('div');card.className='reward';
     const title=document.createElement('strong');title.textContent=current?.name || gift.name;
-    const cost=document.createElement('p');cost.textContent=pageText("{0} 個章｜每人限領一次", gift.stamp_cost);
+    const cost=document.createElement('p');cost.textContent=pageText("{0} 個章｜同款可重複換", gift.stamp_cost);
     const button=document.createElement('button');
-    button.textContent=taken?pageText("已兌換"): pageText("兌換{0}", current?.name || gift.name);
-    button.disabled=!current?.active || taken || available<gift.stamp_cost;
+    button.textContent=pageText("兌換{0}", current?.name || gift.name);
+    button.disabled=!current?.active || available<gift.stamp_cost;
     button.addEventListener('click',()=>openReward(gift.id));
     const note=document.createElement('p');note.className='note';
-    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):taken?pageText("已領取，不能重複兌換"):
+    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):
       !current?.active?pageText("暫未開放兌換"):available<gift.stamp_cost?pageText("剩餘可用章數不足"):pageText("請交由現場工作人員確認");
     card.append(title,cost,button,note);list.append(card);
   }
@@ -219,9 +235,9 @@ function openReward(id) {
   const gift=rewardAccount.gifts.find(g=>g.id===id);
   const cost=GIFT_CATALOG.find(g=>g.id===id)?.stamp_cost;
   const available=rewardAccount.stamps.length-rewardAccount.redemptions.reduce((sum,r)=>sum+r.stamp_cost,0);
-  if(!gift?.active || !cost || rewardAccount.redemptions.some(r=>r.gift_id===id) || available<cost)return;
-  selectedReward={gift_id:id};
-  document.getElementById('redeem-question').textContent=pageText("確定兌換【{0}】1 份？將扣除 {1} 章，剩餘 {2} 章。{3}", gift.name, cost, available-cost, id===3?pageText("兌換後無法再換其他贈品。"):pageText("兌換後無法再換南島絲巾禮盒。"));
+  if(!gift?.active || !cost || available<cost)return;
+  selectedReward={gift_id:id,request_id:crypto.randomUUID(),expected_spent:rewardAccount.stamps.length-available};
+  document.getElementById('redeem-question').textContent=pageText("確定兌換【{0}】1 份？將扣除 {1} 章，剩餘 {2} 章。", gift.name, cost, available-cost);
   document.getElementById('redeem-result').textContent='';
   document.getElementById('redeem-confirm').hidden=false;
   document.getElementById('redeem-confirm').textContent=pageText("確認兌換（扣 {0} 章）", cost);
@@ -244,7 +260,7 @@ document.getElementById('redeem-confirm').addEventListener('click',async()=>{
     const record=data.redemptions.find(r=>r.gift_id===selectedReward.gift_id && r.id===data.redeemed_id);
     if (!record) throw new Error(pageText("尚未確認兌換結果，請重試同一份兌換。"));
     renderAccount(data);
-    result.textContent=pageText("✓ {0}兌換已確認，已扣 {1} 章。兌換時間：{2}。請勿重複領取。", data.gifts.find(g=>g.id===record.gift_id)?.name || pageText("贈品"), record.stamp_cost, new Date(record.redeemed_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
+    result.textContent=pageText("✓ {0}兌換已確認，已扣 {1} 章。兌換時間：{2}。請向工作人員領取本次贈品。", data.gifts.find(g=>g.id===record.gift_id)?.name || pageText("贈品"), record.stamp_cost, new Date(record.redeemed_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
     selectedReward=null;
     confirm.hidden=true; cancel.textContent=pageText("完成");
   } catch(error) {

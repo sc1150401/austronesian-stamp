@@ -29,4 +29,20 @@ const req={number:String(p.participant_no),revision:person.revision,mode:'redemp
 await rpc('reset',req);person=await rpc('participant',{number:String(p.participant_no)});assert.equal(person.spent_stamps,0);assert.equal(person.stamps.length,6);await redeem(p,3);await rpc('reset',req);assert.equal((await rpc('participant',{number:String(p.participant_no)})).redemptions.length,1);
 const g=stats.vendors[0];await rpc('catalog',{kind:'vendor',id:g.id,name:g.name,active:false,expected:{id:g.id,name:g.name,stamp_cost:g.stamp_cost,active:g.active},reason:'暫停測試',request_id:'44444444-4444-4444-8444-444444444444'});
 await db.exec('set role anon');await assert.rejects(()=>redeem(closed,3),/permission denied/);await assert.rejects(()=>db.query('select * from stamp_gift_redemptions'),/permission denied/);await db.exec('reset role;set role service_role');await assert.rejects(()=>db.query("select redeem_stamp_reward($1,1,1,'test')",[p.id]),/permission denied/);await db.exec('reset role');
-console.log('PASS gifts: migration retry; archived legacy records; 2+4 and 4+2; 6-only; no overspend; idempotent duplicate; competing choices; closed gifts; exact stats; audited reset retry; catalog; access controls; old endpoint revoked');await db.close();
+console.log('PASS gifts: migration retry; archived legacy records; 2+4 and 4+2; 6-only; no overspend; idempotent duplicate; competing choices; closed gifts; exact stats; audited reset retry; catalog; access controls; old endpoint revoked');
+
+
+const currentMigration=fs.readFileSync('supabase/migrations/202611130006_gift_catalog.sql','utf8');
+await db.exec(currentMigration);await db.exec(currentMigration);
+await db.exec('update stamp_gifts set active=true');
+const repeat=async(person,gift,spent,key=crypto.randomUUID())=>(await db.query("select redeem_stamp_gift_v2($1,$2,'test',$3,$4) v",[person.id,gift,key,spent])).rows[0].v;
+const stickers=await create('three stickers',6), key=crypto.randomUUID();
+assert.equal(await repeat(stickers,1,0,key),await repeat(stickers,1,0,key));
+await assert.rejects(()=>repeat(stickers,1,0),/已更新/);
+await repeat(stickers,1,2);await repeat(stickers,1,4);await assert.rejects(()=>repeat(stickers,1,6),/不足/);
+const socks=await create('two socks',6);await repeat(socks,2,0);await repeat(socks,2,3);
+const charm=await create('charm and sticker',6);await repeat(charm,4,0);await repeat(charm,1,4);
+assert.equal((await rpc('overview')).redemption_distribution[3].people,1);
+assert.equal((await rpc('participant',{number:String(t.participant_no)})).spent_stamps,6);
+console.log('PASS repeat rewards: three stickers, two socks, charm plus sticker, retry, stale balance, historical costs');
+await db.close();

@@ -1,6 +1,6 @@
 // Deploy as stamp-gifts with legacy JWT verification OFF.
 // LINE ID tokens are verified before all database access.
-// gift_id is stable across retries; each gift can be redeemed once per participant.
+// Each confirmation has its own retry-safe request ID.
 const CHANNEL = "2012241831";
 const headers = {
   "Access-Control-Allow-Origin": "https://sc1150401.github.io",
@@ -24,7 +24,7 @@ Deno.serve(async req => {
     if (!body || !["status","redeem"].includes(body.action))
       return reply({error:"INVALID_ACTION"},400);
     if (body.action === "redeem" &&
-        (!Number.isInteger(body.gift_id) || body.gift_id < 1 || body.gift_id > 3))
+        (!Number.isInteger(body.gift_id) || body.gift_id < 1 || body.gift_id > 4))
       return reply({error:"INVALID_REDEMPTION"},400);
     if (typeof body.id_token !== "string" || !body.id_token)
       return reply({error:"LOGIN_REQUIRED"},401);
@@ -40,6 +40,10 @@ Deno.serve(async req => {
         typeof identity.sub !== "string" || !identity.sub ||
         !(identity.exp > Date.now()/1000))
       return reply({error:"LOGIN_REQUIRED"},401);
+    if(body.action==="redeem" && body.rules_version!=="gifts-v2")
+      return reply({error:"REFRESH_REQUIRED"},409);
+    if(body.action==="redeem" && (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.request_id) || !Number.isInteger(body.expected_spent)))
+      return reply({error:"INVALID_REQUEST"},400);
     const url = Deno.env.get("SUPABASE_URL");
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) return reply({error:"SERVER_NOT_READY"},503);
@@ -53,7 +57,7 @@ Deno.serve(async req => {
         // Return only known business-rule errors, never raw database details.
         let error;
         try { error = await res.json(); } catch {}
-        const allowed = ['找不到參加者','贈品不存在','這項贈品尚未開放兌換','剩餘可用章數不足'];
+        const allowed = ['找不到參加者','贈品不存在','這項贈品尚未開放兌換','剩餘可用章數不足','兌換紀錄已更新，請重新載入集章卡。'];
         if (allowed.includes(error?.message))
           throw new Error(error.message);
         throw new Error("DATABASE_ERROR");
@@ -66,32 +70,34 @@ Deno.serve(async req => {
     const participant = users[0].id;
     let redeemedId = null;
     if (body.action === "redeem") {
-      redeemedId = await db("rpc/redeem_stamp_gift", {
+      redeemedId = await db("rpc/redeem_stamp_gift_v2", {
         method:"POST",
         body:JSON.stringify({
           p_participant_id:participant,
           p_gift_id:body.gift_id,
+          p_request_id:body.request_id,p_expected_spent:body.expected_spent,
           p_redeemed_by:"self:"+identity.sub
         })
       });
     }
     const [stamps, redemptions, gifts, stations] = await Promise.all([
-      db("stamp_records?select=station_id&participant_id=eq."+participant),
+      db("stamp_records?select=station_id&participant_id=eq."+participant+"&order=collected_at.asc,station_id.asc"),
       db("stamp_gift_redemptions?select=id,gift_id,stamp_cost,redemption_no,redeemed_at&participant_id=eq."+
         participant+"&order=redemption_no"),
       db("stamp_gifts?select=id,name,stamp_cost,active&order=id"),
       db("stamp_stations?select=id,name&order=id")
     ]);
     return reply({
-      ok:true,rules_version:"gifts-v1",gift_ready:true,stamps,redemptions,gifts,stations,
+      ok:true,rules_version:"gifts-v2",gift_ready:true,stamps,redemptions,gifts,stations,
       participant_number:String(users[0].participant_no),redeemed_id:redeemedId,
       available_stamps:Math.max(0,stamps.length-redemptions.reduce((sum,r)=>sum+r.stamp_cost,0))
     });
   } catch (error) {
     const message = error?.message;
-    if (message && /^(找不到參加者|贈品不存在|這項贈品|剩餘可用章數)/.test(message))
+    if (message && /^(找不到參加者|贈品不存在|這項贈品|剩餘可用章數|兌換紀錄已更新)/.test(message))
       return reply({error:"REDEMPTION_REJECTED",message},409);
     return reply({error:"TEMPORARY_FAILURE"},500);
   }
 });
+
 
