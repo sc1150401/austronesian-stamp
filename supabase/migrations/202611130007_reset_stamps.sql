@@ -126,14 +126,22 @@ begin
   elsif p_action='reset' then
     v_number=(p_payload->>'number')::bigint;
     v_kind=p_payload->>'mode';
-    if v_kind is null or v_kind not in ('redemptions','all') then raise exception 'INVALID_MODE'; end if;
+    if v_kind is null or v_kind not in ('stamps_only','redemptions','all') then raise exception 'INVALID_MODE'; end if;
     select id into v_id from public.stamp_participants where participant_no=v_number for update;
     if not found then raise exception 'NOT_FOUND'; end if;
     v_before=public.stamp_admin_snapshot(v_number);
     if (p_payload->>'revision') is distinct from md5(v_before::text) then raise exception 'RECORD_CHANGED'; end if;
-    delete from public.stamp_gift_redemptions where participant_id=v_id;
-    delete from public.stamp_gift_archive where participant_id=v_id;
-    if v_kind='all' then delete from public.stamp_records where participant_id=v_id; end if;
+    if v_kind='stamps_only' then
+      with moved as (
+        delete from public.stamp_gift_redemptions where participant_id=v_id returning *
+      )
+      insert into public.stamp_gift_archive(id,participant_id,gift_id,stamp_cost,redemption_no,redeemed_at,redeemed_by,request_id)
+        select id,participant_id,gift_id,stamp_cost,redemption_no,redeemed_at,redeemed_by,request_id from moved;
+    else
+      delete from public.stamp_gift_redemptions where participant_id=v_id;
+      delete from public.stamp_gift_archive where participant_id=v_id;
+    end if;
+    if v_kind in ('stamps_only','all') then delete from public.stamp_records where participant_id=v_id; end if;
     v_after=public.stamp_admin_snapshot(v_number);
     v_target='A'||lpad(v_number::text,greatest(6,length(v_number::text)),'0');
   else

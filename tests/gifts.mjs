@@ -62,4 +62,18 @@ await assert.rejects(()=>repeat(stickers,1,0,key),/已更新/);
 await repeat(stickers,1,0);
 assert.equal((await rpc('overview')).redemption_distribution[4].people,1);
 console.log('PASS bulk reset preserves accounts, historical receipts, statistics and new scans on retry');
+
+const target=await create('targeted reset',4);
+await repeat(target,4,0);
+const getCard=async p=>rpc('participant',{number:String(p.participant_no)});
+const neighborBefore=await getCard(stickers),targetBefore=await getCard(target);
+const one={mode:'stamps_only',number:String(target.participant_no),reason:'指定編號清空',revision:targetBefore.revision,request_id:crypto.randomUUID()};
+await rpc('reset',one);
+const cleared=await getCard(target);
+assert.equal(cleared.stamps.length,0);assert.equal(cleared.spent_stamps,0);
+assert.equal(cleared.redemptions.length,1);assert(cleared.redemptions[0].archived);
+assert.deepEqual(await getCard(stickers),neighborBefore);
+await db.query('insert into stamp_records(participant_id,station_id) values($1,1),($1,2)',[target.id]);
+await rpc('reset',one);await repeat(target,1,0);
+console.log('PASS single stamp reset preserves receipts, other participants, and new scans on retry');
 await db.close();
