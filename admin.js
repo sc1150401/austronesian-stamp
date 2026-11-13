@@ -6,7 +6,7 @@ const code=n=>'A'+String(n).padStart(6,'0');
 const date=s=>s?new Date(s).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',hour12:false}):'';
 const message=s=>{$('message').textContent=s;};
 const errors={LOGIN_FAILED:'Email 或密碼不正確。',LOGIN_REQUIRED:'登入已到期，請重新登入。',ADMIN_REQUIRED:'此帳號未獲管理權限。',SERVER_NOT_READY:'後台尚未完成部署設定。',NOT_FOUND:'找不到這個參加者編號。',RECORD_CHANGED:'資料已有變動，請重新查詢後再操作。',REQUEST_CONFLICT:'操作編號衝突，請重新查詢。',REASON_REQUIRED:'請填寫至少兩個字的操作原因。',TEMPORARY_FAILURE:'連線暫時失敗。若剛才正在修改資料，請先重新查詢確認結果。'};
-function clearSession(){token='';stats=null;person=null;audits=[];people=[];cursor='0';$('dashboard').hidden=true;$('login-card').hidden=false;$('logout').hidden=true;$('password').value='';if($('reset-dialog').open)$('reset-dialog').close();}
+function clearSession(){$('copy-editor').hidden=true;$('copy-fields').replaceChildren();copyVersion=null;$('copy-status').textContent='';token='';stats=null;person=null;audits=[];people=[];cursor='0';$('dashboard').hidden=true;$('login-card').hidden=false;$('logout').hidden=true;$('password').value='';if($('reset-dialog').open)$('reset-dialog').close();}
 async function request(action,payload={}){
  const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(action==='login'?{action,...payload}:{action,payload}),signal:AbortSignal.timeout(30000)});
  let body;try{body=await response.json();}catch{throw Error('伺服器沒有回傳有效資料，請確認 stamp-admin 已部署。');}
@@ -43,3 +43,50 @@ $('reset-cancel').addEventListener('click',()=>{if(!working)$('reset-dialog').cl
 $('reset-form').addEventListener('submit',e=>{e.preventDefault();task(async()=>{if(!person)return;if($('reset-check').value.trim().toUpperCase()!==code(person.number))throw Error('確認編號不一致，尚未重設。');const mode=$('reset-mode').value,reason=$('reset-reason').value.trim();const signature=JSON.stringify([person.number,person.revision,mode,reason]);if(!resetRequest||resetRequest.signature!==signature)resetRequest={signature,id:crypto.randomUUID()};await request('reset',{number:person.number,revision:person.revision,mode,reason,request_id:resetRequest.id});$('reset-dialog').close();message('重設操作已完成，參加者編號保留。');await lookup(person.number);await refreshStats();await loadPeople(true);await loadAudit();});});
 $('export-people').addEventListener('click',()=>task(async()=>{let after='0',rows=[];for(;;){const page=(await request('participants',{after,limit:500})).rows;rows.push(...page);message('已讀取 '+rows.length+' 位參加者…');if(page.length<500)break;after=page.at(-1).number;}downloadCSV('參加者清單',['編號','加入時間','累積章數','可用章數','已兌換份數'],rows.map(r=>[code(r.number),date(r.created_at),r.stamps,Math.max(0,r.stamps-(r.spent_stamps||0)),r.redeemed]));message('匯出完成。匯出期間新增或變更的資料，可能反映於不同分頁。');}));
 document.querySelectorAll('[data-export]').forEach(b=>b.addEventListener('click',()=>exportReport(b.dataset.export)));
+
+const copyEndpoint=ENDPOINT.replace('/stamp-admin','/stamp-content');
+let copyVersion=null;
+function filterCopy(){
+  const query=$('copy-search').value.trim().toLowerCase();
+  for(const row of $('copy-fields').children){
+    const input=row.querySelector('textarea');
+    row.hidden=!(row.textContent+input.value).toLowerCase().includes(query);
+  }
+}
+$('copy-search').addEventListener('input',filterCopy);
+$('load-copy').addEventListener('click',()=>task(async()=>{
+  const status=$('copy-status');
+  status.textContent='載入中…';
+  try {
+    const [manifest,result]=await Promise.all([fetch('site-copy.json',{cache:'no-store'}),fetch(copyEndpoint,{cache:'no-store'})]);
+    if(!manifest.ok||!result.ok)throw Error();
+    const fields=await manifest.json(),current=await result.json();
+    if(!Number.isInteger(current.version)||!current.texts)throw Error();
+    const fragment=document.createDocumentFragment();
+    for(const {text,group} of fields){
+      const row=document.createElement('div'),label=document.createElement('label'),input=document.createElement('textarea');
+      label.textContent=group+'｜'+text;
+      input.value=current.texts[text]??text;input.dataset.source=text;input.maxLength=3000;input.rows=2;input.style.width='100%';
+      const reset=document.createElement('button');reset.type='button';reset.textContent='還原此項原文';reset.onclick=()=>{input.value=text};
+      label.append(input);row.append(label,reset);fragment.append(row);
+    }
+    $('copy-fields').replaceChildren(fragment);copyVersion=current.version;
+    $('copy-editor').hidden=false;filterCopy();status.textContent='已載入 '+fields.length+' 項文字。';
+  }catch{status.textContent='載入失敗，請確認 Supabase 文字服務已啟用後再試。';}
+}));
+$('save-copy').addEventListener('click',()=>task(async()=>{
+  if(copyVersion===null)return;
+  const texts=Object.create(null),slots=s=>(s.match(/\{\d+\}/g)||[]).sort().join(',');
+  for(const input of $('copy-fields').querySelectorAll('textarea')){
+    const source=input.dataset.source;
+    if(!input.value.trim()||slots(input.value)!==slots(source)){
+      $('copy-search').value='';filterCopy();input.focus();$('copy-status').textContent='請填寫文字並保留原本的動態欄位。';return;
+    }
+    if(input.value!==source)texts[source]=input.value;
+  }
+  const response=await fetch(copyEndpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+    body:JSON.stringify({version:copyVersion,texts})});
+  const result=await response.json();
+  if(!response.ok){$('copy-status').textContent=result.error||'儲存失敗。';return;}
+  copyVersion=result.version;$('copy-status').textContent='文字已發布，參加者重新開啟頁面即可看到。';
+}));
