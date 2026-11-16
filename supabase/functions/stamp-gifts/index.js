@@ -85,16 +85,15 @@ Deno.serve(async req => {
         })
       });
     }
-    const [stamps, redemptions, gifts, stations, archived] = await Promise.all([
+    const [stamps, redemptions, gifts, stations] = await Promise.all([
       db("stamp_records?select=station_id&participant_id=eq."+participant+"&order=collected_at.asc,station_id.asc"),
       db("stamp_gift_redemptions?select=id,gift_id,stamp_cost,redemption_no,redeemed_at&participant_id=eq."+
         participant+"&order=redemption_no"),
       db("stamp_gifts?select=id,name,stamp_cost,active&order=id"),
-      db("stamp_stations?select=id,name&order=id"),
-      db("rpc/stamp_has_archived_gifts",{method:"POST",body:JSON.stringify({p_participant_id:participant})})
+      db("stamp_stations?select=id,name&order=id")
     ]);
     return reply({
-      ok:true,rules_version:"gifts-v3",gift_ready:true,already_redeemed:archived || redemptions.length>0,stamps,redemptions,gifts,stations,
+      ok:true,rules_version:"gifts-v3",gift_ready:true,stamps,redemptions,gifts,stations,
       participant_number:String(users[0].participant_no),redeemed_id:redeemedId,
       available_stamps:Math.max(0,stamps.length-redemptions.reduce((sum,r)=>sum+r.stamp_cost,0))
     });

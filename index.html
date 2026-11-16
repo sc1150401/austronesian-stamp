@@ -213,7 +213,7 @@ function renderRewards(data) {
   function refreshSelection(){
     const total=selected().reduce((sum,entry)=>sum+entry.gift.stamp_cost,0);
     for(const {input,gift} of entries){
-      input.disabled=!rewardAccount || data.already_redeemed || !gift.active ||
+      input.disabled=!rewardAccount || !gift.active ||
         (!input.checked && total+gift.stamp_cost>available);
     }
     checkout.disabled=total===0;
@@ -229,13 +229,13 @@ function renderRewards(data) {
     input.addEventListener('change',refreshSelection);
     entries.push({input,gift});
     const note=document.createElement('span');
-    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):data.already_redeemed?pageText("已完成兌換，每人限兌換一次。"):
+    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):
       !gift.active?pageText("暫未開放兌換"):available<gift.stamp_cost?pageText("剩餘可用章數不足"):gift.name;
-    if(rewardAccount && !data.already_redeemed && gift.active && available>=gift.stamp_cost)note.textContent='選取';
+    if(rewardAccount && gift.active && available>=gift.stamp_cost)note.textContent='選取';
     card.append(title,cost,input,note);list.append(card);
   }
   refreshSelection();
-  if(rewardAccount && !data.already_redeemed){
+  if(rewardAccount){
     checkout.addEventListener('click',()=>{
       const gifts=selected().map(entry=>entry.gift);
       if(gifts.length) openReward(gifts.map(g=>g.id),gifts.map(g=>g.name).join('＋'),gifts.reduce((sum,g)=>sum+g.stamp_cost,0));
@@ -244,7 +244,7 @@ function renderRewards(data) {
   }
   if(!rewardAccount) {receipt.textContent=pageText("贈品服務尚未就緒，兌換暫時關閉；集章紀錄仍保留。");return;}
   const summary=document.createElement('p');
-  summary.textContent=pageText("累積 {0} 章・已扣 {1} 章・尚可兌換 {2} 章", data.stamps.length, spent, data.already_redeemed?0:available);receipt.append(summary);
+  summary.textContent=pageText("累積 {0} 章・已扣 {1} 章・尚可兌換 {2} 章", data.stamps.length, spent, available);receipt.append(summary);
   for(const record of records) {
     const item=document.createElement('p');const gift=data.gifts.find(g=>g.id===record.gift_id);
     item.textContent=pageText("✓ {0}｜已扣 {1} 章｜{2}", gift?.name || GIFT_CATALOG.find(g=>g.id===record.gift_id).name, record.stamp_cost, new Date(record.redeemed_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
@@ -252,7 +252,7 @@ function renderRewards(data) {
   }
 }
 function openReward(ids,name,cost) {
-  if(busy || !rewardAccount || rewardAccount.already_redeemed)return;
+  if(busy || !rewardAccount)return;
   document.getElementById("desk-code").value="";
   document.getElementById("desk-label").hidden=false;
   selectedReward={gift_ids:ids,request_id:crypto.randomUUID()};
@@ -280,9 +280,10 @@ document.getElementById('redeem-confirm').addEventListener('click',async()=>{
     const data=await rewardRequest('redeem',{...selectedReward,desk_code:code.value});
     code.value='';document.getElementById('desk-label').hidden=true;
     const record=data.redemptions.find(r=>r.id===data.redeemed_id);
-    if (!record || !selectedReward.gift_ids.every(id=>data.redemptions.some(r=>r.gift_id===id))) throw new Error(pageText("尚未確認兌換結果，請重試同一份兌換。"));
+    const receiptRows=record ? data.redemptions.filter(r=>r.redemption_no>=record.redemption_no && r.redemption_no<record.redemption_no+selectedReward.gift_ids.length) : [];
+    if (!record || !selectedReward.gift_ids.every(id=>receiptRows.some(r=>r.gift_id===id))) throw new Error(pageText("尚未確認兌換結果，請重試同一份兌換。"));
     renderAccount(data);
-    result.textContent=pageText("✓ {0}兌換已確認，已扣 {1} 章。兌換時間：{2}。請向工作人員領取本次贈品。", selectedReward.gift_ids.map(id=>data.gifts.find(g=>g.id===id).name).join("＋"), data.redemptions.reduce((sum,r)=>sum+r.stamp_cost,0), new Date(record.redeemed_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
+    result.textContent=pageText("✓ {0}兌換已確認，已扣 {1} 章。兌換時間：{2}。請向工作人員領取本次贈品。", selectedReward.gift_ids.map(id=>data.gifts.find(g=>g.id===id).name).join("＋"), receiptRows.reduce((sum,r)=>sum+r.stamp_cost,0), new Date(record.redeemed_at).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'}));
     selectedReward=null;
     confirm.hidden=true; cancel.textContent=pageText("完成");
   } catch(error) {
