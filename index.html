@@ -206,23 +206,42 @@ function renderRewards(data) {
   const records=rewardAccount?data.redemptions:[];
   const spent=records.reduce((sum,r)=>sum+r.stamp_cost,0);
   const available=rewardAccount?Math.max(0,data.stamps.length-spent):0;
-  const choices=[[1],[2],[4],[1,2],[1,4],[3]];
-  for(const ids of choices) {
-    const gifts=ids.map(id=>data?.gifts?.find(g=>g.id===id) || GIFT_CATALOG.find(g=>g.id===id));
-    const name=gifts.map(g=>g.name).join('＋');
-    const total=gifts.reduce((sum,g)=>sum+g.stamp_cost,0);
-    const card=document.createElement('div');card.className='reward';
-    const title=document.createElement('strong');title.textContent=name;
-    const cost=document.createElement('p');cost.textContent=pageText("合計 {0} 章", total);
-    const button=document.createElement('button');button.textContent=pageText("兌換{0}",name);
-    button.disabled=!rewardAccount || data.already_redeemed || gifts.some(g=>!g.active) || available<total;
-    button.addEventListener('click',()=>openReward(ids,name,total));
-    const note=document.createElement('p');note.className='note';
-    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):data.already_redeemed?pageText("已完成兌換，每人限兌換一次。"):
-      gifts.some(g=>!g.active)?pageText("暫未開放兌換"):available<total?pageText("剩餘可用章數不足"):pageText("請交由現場工作人員確認");
-    card.append(title,cost,button,note);list.append(card);
-  }
+  const entries=[];
   const receipt=document.getElementById('receipt');receipt.replaceChildren();
+  const checkout=document.createElement('button');
+  function selected(){return entries.filter(entry=>entry.input.checked);}
+  function refreshSelection(){
+    const total=selected().reduce((sum,entry)=>sum+entry.gift.stamp_cost,0);
+    for(const {input,gift} of entries){
+      input.disabled=!rewardAccount || data.already_redeemed || !gift.active ||
+        (!input.checked && total+gift.stamp_cost>available);
+    }
+    checkout.disabled=total===0;
+    checkout.textContent=pageText("確認兌換（扣 {0} 章）",total);
+  }
+  for(const item of GIFT_CATALOG){
+    const gift=data?.gifts?.find(row=>row.id===item.id) || item;
+    const card=document.createElement('label');card.className='reward';
+    const title=document.createElement('strong');title.textContent=gift.name;
+    const cost=document.createElement('p');cost.textContent=gift.stamp_cost+' 章';
+    const input=document.createElement('input');input.type='checkbox';
+    input.setAttribute('aria-label',gift.name);
+    input.addEventListener('change',refreshSelection);
+    entries.push({input,gift});
+    const note=document.createElement('span');
+    note.textContent=!rewardAccount?pageText("贈品兌換設定中，暫未開放"):data.already_redeemed?pageText("已完成兌換，每人限兌換一次。"):
+      !gift.active?pageText("暫未開放兌換"):available<gift.stamp_cost?pageText("剩餘可用章數不足"):gift.name;
+    if(rewardAccount && !data.already_redeemed && gift.active && available>=gift.stamp_cost)note.textContent='選取';
+    card.append(title,cost,input,note);list.append(card);
+  }
+  refreshSelection();
+  if(rewardAccount && !data.already_redeemed){
+    checkout.addEventListener('click',()=>{
+      const gifts=selected().map(entry=>entry.gift);
+      if(gifts.length) openReward(gifts.map(g=>g.id),gifts.map(g=>g.name).join('＋'),gifts.reduce((sum,g)=>sum+g.stamp_cost,0));
+    });
+    receipt.append(checkout);
+  }
   if(!rewardAccount) {receipt.textContent=pageText("贈品服務尚未就緒，兌換暫時關閉；集章紀錄仍保留。");return;}
   const summary=document.createElement('p');
   summary.textContent=pageText("累積 {0} 章・已扣 {1} 章・尚可兌換 {2} 章", data.stamps.length, spent, data.already_redeemed?0:available);receipt.append(summary);
