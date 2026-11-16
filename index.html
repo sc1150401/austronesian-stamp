@@ -166,7 +166,7 @@ let rewardAccount = null;
 let selectedReward = null;
 const redeemDialog = document.getElementById('redeem-dialog');
 const GIFT_CATALOG = [
-  {id:1,get name(){return pageText("南島小巨人紋身貼紙")},stamp_cost:2},
+  {id:1,get name(){return pageText("南島特色紋身貼紙")},stamp_cost:2},
   {id:2,get name(){return pageText("南島特色襪子")},stamp_cost:3},
   {id:4,get name(){return pageText("南島小巨人吊飾")},stamp_cost:4},
   {id:3,get name(){return pageText("南島特色絲巾禮盒")},stamp_cost:6}
@@ -190,6 +190,8 @@ async function rewardRequest(action, selection = {}) {
     const legacy=await post('/stamp-redeem',{action:'status'});
     return {...legacy,redemptions:[],gifts:[],gift_ready:false,rules_version:'pending'};
   }
+  const sticker=Array.isArray(data.gifts) && data.gifts.find(g=>g.id===1);
+  if(sticker && ['南島小巨人紋身貼紙','南島紋身貼紙'].includes(sticker.name)) sticker.name=pageText("南島特色紋身貼紙");
   if(data.rules_version!=='gifts-v3' || !Array.isArray(data.gifts) ||
      !GIFT_CATALOG.every(g=>data.gifts.some(row=>row.id===g.id && row.stamp_cost===g.stamp_cost)))
     return {...data,gift_ready:false,rules_version:'pending'};
