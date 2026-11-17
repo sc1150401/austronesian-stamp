@@ -149,6 +149,13 @@ h2::before{content:"";width:12px;height:26px;flex:none;background:#e3bc6c}
         windowWidth: document.documentElement.clientWidth,
         onclone: async doc => {
           doc.querySelectorAll('.page img').forEach(img => { img.loading = 'eager'; });
+          // Compensate for html2canvas's lower CJK text baseline in exports.
+          // Relative positioning preserves line wrapping and card spacing.
+          doc.querySelectorAll('.step-copy p').forEach(paragraph => {
+            const fontSize = parseFloat(doc.defaultView.getComputedStyle(paragraph).fontSize);
+            paragraph.style.position = 'relative';
+            paragraph.style.top = `-${fontSize * 0.35}px`;
+          });
           await Promise.all(Array.from(doc.querySelectorAll('.step-number'), async (badge, index) => {
             const data = badges[index];
             const img = doc.createElement('img');
