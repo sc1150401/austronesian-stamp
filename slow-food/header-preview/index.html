@@ -26,10 +26,11 @@ h2{display:flex;align-items:center;gap:10px;margin:0 0 22px;font-family:"Noto Se
 h2::before{content:"";width:12px;height:26px;flex:none;background:#e3bc6c}
 .ingredients{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 12px;margin:0}
 .ingredients>div{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:0;min-height:88px;padding:14px 4px;background:#fff;border-radius:13px;text-align:center}
-.ingredients dt,.ingredients dd{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:17px;line-height:1.65;font-weight:700}
+.ingredients dt,.ingredients dd{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:18px;line-height:1.65;font-weight:700}
 .ingredients dt{margin:0;color:#111;overflow-wrap:anywhere}
 .ingredients dd{margin:2px 0 0;color:#a66d18}
-@media(max-width:360px){.ingredients{gap:12px 8px}.ingredients dt,.ingredients dd{font-size:15px}.ingredients>div{min-height:82px}}
+@media(max-width:360px){.ingredients{gap:12px 8px}.ingredients dt,.ingredients dd{font-size:16px}.ingredients>div{min-height:82px}}
+.ingredient-word{display:inline-block;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -43,7 +44,7 @@ h2::before{content:"";width:12px;height:26px;flex:none;background:#e3bc6c}
 <p class="description">洋蔥與玉米炒香，加入蔬菜高湯煮滾，以芋頭粉增添芋香，鹽與白胡椒調味。</p>
 <section class="ingredients-section" aria-labelledby="ingredients-title">
 <h2 id="ingredients-title">食材</h2>
-<dl class="ingredients"><div><dt>芋頭粉</dt><dd>30克</dd></div><div><dt>熟玉米粒</dt><dd>180克</dd></div><div><dt>洋蔥</dt><dd>60克</dd></div><div><dt>無鹽奶油</dt><dd>10克</dd></div><div><dt>無鹽蔬菜高湯</dt><dd>500毫升</dd></div><div><dt>牛奶</dt><dd>120毫升</dd></div><div><dt>冷水</dt><dd>80 毫升</dd></div><div><dt>鹽</dt><dd>約2克</dd></div><div><dt>白胡椒</dt><dd>少許</dd></div></dl>
+<dl class="ingredients"><div><dt>芋頭粉</dt><dd>30克</dd></div><div><dt>熟玉米粒</dt><dd>180克</dd></div><div><dt>洋蔥</dt><dd>60克</dd></div><div><dt>無鹽奶油</dt><dd>10克</dd></div><div><dt><span class="ingredient-word">無鹽</span><wbr><span class="ingredient-word">蔬菜高湯</span></dt><dd>500毫升</dd></div><div><dt>牛奶</dt><dd>120毫升</dd></div><div><dt>冷水</dt><dd>80 毫升</dd></div><div><dt>鹽</dt><dd>約2克</dd></div><div><dt>白胡椒</dt><dd>少許</dd></div></dl>
 </section>
 </article>
 </main>
